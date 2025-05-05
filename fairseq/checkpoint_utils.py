@@ -100,9 +100,9 @@ def save_checkpoint(cfg: CheckpointConfig, trainer, epoch_itr, val_loss):
                 cfg.best_checkpoint_metric, val_loss, rand_sfx, suffix
             )
         ] = worst_best is None or is_better(val_loss, worst_best)
-    checkpoint_conds[
-        "checkpoint_last{}.pt".format(suffix)
-    ] = not cfg.no_last_checkpoints
+    checkpoint_conds["checkpoint_last{}.pt".format(suffix)] = (
+        not cfg.no_last_checkpoints
+    )
 
     extra_state = {
         "train_iterator": epoch_itr.state_dict(),
@@ -116,7 +116,9 @@ def save_checkpoint(cfg: CheckpointConfig, trainer, epoch_itr, val_loss):
     # attributes
     if hasattr(trainer.task, "get_checkpoint_dict"):
         extra_state = {**extra_state, **trainer.task.get_checkpoint_dict()}
-        logger.info(f"State of {trainer.task.__class__.__name__} is ready to be persisted with the checkpoint")
+        logger.info(
+            f"State of {trainer.task.__class__.__name__} is ready to be persisted with the checkpoint"
+        )
 
     if hasattr(save_checkpoint, "best"):
         extra_state.update({"best": save_checkpoint.best})
@@ -337,7 +339,7 @@ def load_checkpoint_to_cpu(path, arg_overrides=None, load_on_all_ranks=False):
         local_path = PathManager.get_local_path(path)
 
     with open(local_path, "rb") as f:
-        state = torch.load(f, map_location=torch.device("cpu"))
+        state = torch.load(f, map_location=torch.device("cpu"), weights_only=False)
 
     if "args" in state and state["args"] is not None and arg_overrides is not None:
         args = state["args"]
@@ -911,6 +913,7 @@ def load_ema_from_checkpoint(fpath):
             map_location=(
                 lambda s, _: torch.serialization.default_restore_location(s, "cpu")
             ),
+            weights_only=False,
         )
 
         # EMA model is stored in a separate "extra state"
